@@ -5,6 +5,7 @@ Las herramientas se ejecutan de verdad; lo unico simulado es la decision de cada
 
 from typing import Any
 
+import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import BaseTool
 
@@ -21,6 +22,7 @@ from graph import (
 from state import CLAVES_POR_NODO, FUERA_DE_ALCANCE, estado_inicial
 from tests.conftest import TAREA, correr
 from tests.fakes import (
+    ErrorDeApi,
     SupervisorFalso,
     decidir,
     especialistas_falsos,
@@ -253,6 +255,78 @@ async def test_una_salida_invalida_del_supervisor_no_rompe_la_corrida() -> None:
     final = await correr(supervisor, especialistas)
     assert final["estado_final"] == "completado"
     assert final["decisiones"][0].corregida_por_guarda and final["decisiones"][0].siguiente == "investigador"
+
+
+# ---------- Fallas de la API del modelo: ningun nodo tira abajo el grafo ----------
+
+
+async def test_si_el_investigador_falla_por_la_red_el_aporte_se_rechaza_y_el_supervisor_reintenta() -> None:
+    especialistas = especialistas_falsos(
+        [ConnectionError("red caída"), *guion_investigador()], guion_analista(), [INFORME_OK]
+    )
+    supervisor = SupervisorFalso(
+        guion=[decidir("investigador"), decidir("investigador"), decidir("analista"), decidir("redactor"), decidir("FINISH")]
+    )
+    final = await correr(supervisor, especialistas)
+    assert final["estado_final"] == "completado"
+    assert final["intentos"]["investigador"] == 2
+    primera = final["validaciones"][0]
+    assert not primera.aprobada and "El modelo falló (ConnectionError)" in primera.problemas[0]
+    assert final["contribuciones"][0].error and "red caída" in final["contribuciones"][0].error
+
+
+async def test_si_el_redactor_falla_por_la_api_no_hay_informe_hasta_que_se_reintenta() -> None:
+    especialistas = especialistas_falsos(
+        guion_investigador(), guion_analista(), [ErrorDeApi("servidor caído", 529), INFORME_OK]
+    )
+    supervisor = SupervisorFalso(
+        guion=[decidir("investigador"), decidir("analista"), decidir("redactor"), decidir("redactor"), decidir("FINISH")]
+    )
+    final = await correr(supervisor, especialistas)
+    assert final["estado_final"] == "completado"
+    assert final["intentos"]["redactor"] == 2
+    rechazo = next(v for v in final["validaciones"] if v.agente == "redactor" and not v.aprobada)
+    assert "El modelo falló (ErrorDeApi)" in rechazo.problemas[0]
+
+
+async def test_si_el_supervisor_falla_por_la_api_sigue_el_orden_logico_y_lo_registra() -> None:
+    supervisor = SupervisorFalso(
+        guion=[TimeoutError("sin respuesta"), decidir("analista"), decidir("redactor"), decidir("FINISH")]
+    )
+    especialistas = especialistas_falsos(guion_investigador(), guion_analista(), [INFORME_OK])
+    final = await correr(supervisor, especialistas)
+    assert final["estado_final"] == "completado"
+    primera = final["decisiones"][0]
+    assert primera.siguiente == "investigador" and primera.corregida_por_guarda
+    assert primera.razon_guarda is not None and "El modelo falló (TimeoutError)" in primera.razon_guarda
+
+
+async def test_si_la_api_falla_siempre_el_sistema_cierra_con_validacion_fallida_sin_romperse() -> None:
+    especialistas = especialistas_falsos([ErrorDeApi("límite de uso", 429)] * 3, [], [])
+    final = await correr(SupervisorFalso(guion=[decidir("investigador")]), especialistas, max_intentos=3)
+    assert final["estado_final"] == "validacion_fallida"
+    assert final["intentos"]["investigador"] == 3
+    assert "El modelo falló" in final["respuesta_final"] and final["informe"] is None
+
+
+@pytest.mark.parametrize("quien", ["supervisor", "investigador", "analista", "redactor"])
+async def test_un_error_irrecuperable_de_la_api_no_se_traga_sube_para_avisarle_al_usuario(quien: str) -> None:
+    clave_invalida = ErrorDeApi("clave inválida", 401)
+    guiones: dict[str, Any] = {
+        "investigador": guion_investigador(),
+        "analista": guion_analista(),
+        "redactor": [INFORME_OK],
+    }
+    supervisor = SupervisorFalso(
+        guion=[decidir("investigador"), decidir("analista"), decidir("redactor"), decidir("FINISH")]
+    )
+    if quien == "supervisor":
+        supervisor = SupervisorFalso(guion=[clave_invalida])
+    else:
+        guiones[quien] = [clave_invalida]
+    especialistas = especialistas_falsos(guiones["investigador"], guiones["analista"], guiones["redactor"])
+    with pytest.raises(ErrorDeApi):
+        await correr(supervisor, especialistas)
 
 
 # ---------- Aislamiento de estado y de contexto ----------

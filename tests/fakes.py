@@ -90,17 +90,26 @@ class ModeloPorPolitica(BaseChatModel):
         return self._generate(messages, stop)
 
 
+class ErrorDeApi(Exception):
+    """Simula un error de la API del modelo (con `status_code`, como los del SDK de Anthropic)."""
+
+    def __init__(self, mensaje: str, status_code: int) -> None:
+        super().__init__(mensaje)
+        self.status_code = status_code
+
+
 def especialistas_falsos(
-    investigador: Sequence[AIMessage] = (),
-    analista: Sequence[AIMessage] = (),
-    redactor: Sequence[AIMessage] = (),
+    investigador: Sequence[AIMessage | Exception] = (),
+    analista: Sequence[AIMessage | Exception] = (),
+    redactor: Sequence[AIMessage | Exception] = (),
 ) -> ModeloPorPolitica:
     """Un modelo que responde segun QUIEN lo llama (lo sabe por el prompt de sistema).
 
     Cada rol tiene su propia cola de mensajes: se consumen en orden, a lo largo de toda la
-    corrida (incluidos los refinamientos).
+    corrida (incluidos los refinamientos). Si un elemento de la cola es una excepcion, el
+    modelo la levanta en lugar de responder (simula una falla de la API).
     """
-    colas: dict[str, list[AIMessage]] = {
+    colas: dict[str, list[AIMessage | Exception]] = {
         "Investigador": list(investigador),
         "Analista": list(analista),
         "Redactor": list(redactor),
@@ -112,7 +121,10 @@ def especialistas_falsos(
             if f"Agente {rol}" in sistema:
                 if not cola:
                     raise AssertionError(f"El modelo falso del {rol} se quedo sin mensajes del guion.")
-                return cola.pop(0)
+                siguiente = cola.pop(0)
+                if isinstance(siguiente, Exception):
+                    raise siguiente
+                return siguiente
         raise AssertionError("No se pudo identificar el rol que llamo al modelo falso.")
 
     return ModeloPorPolitica(politica=politica)

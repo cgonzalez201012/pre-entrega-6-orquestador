@@ -18,8 +18,12 @@ RUTA_DIAGRAMA = BASE_DIR / "docs" / "grafo.mmd"
 RUTA_DIAGRAMA_PNG = BASE_DIR / "docs" / "grafo.png"
 
 
+TIMEOUT_LLM_SEGUNDOS = 60.0
+REINTENTOS_LLM = 2
+
+
 def crear_llm(clave: str, modelo: str, max_tokens: int) -> ChatAnthropic:
-    """Modelo de Anthropic.
+    """Modelo de Anthropic, con timeout y reintentos acotados (no esperar para siempre ni reintentar sin fin).
 
     No se envia `temperature`: la API de Anthropic la rechaza con este modelo
     (error 400 "temperature: Extra inputs are not permitted"), asi que queda el valor del servicio.
@@ -28,6 +32,8 @@ def crear_llm(clave: str, modelo: str, max_tokens: int) -> ChatAnthropic:
         model=modelo,
         api_key=clave,  # type: ignore[arg-type]
         max_tokens=max_tokens,
+        timeout=TIMEOUT_LLM_SEGUNDOS,
+        max_retries=REINTENTOS_LLM,
     )
 
 

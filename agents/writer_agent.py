@@ -12,8 +12,9 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 
-from agents.base import entrada_con_correcciones, texto_de
+from agents.base import descripcion_de_falla, entrada_con_correcciones, texto_de
 from agents.research_agent import NodoAsincrono
+from errores import es_error_irrecuperable
 from state import Analisis, Contribucion, EstadoOrquestador, Hallazgos, NombreAgente
 
 NOMBRE: NombreAgente = "redactor"
@@ -68,9 +69,19 @@ def crear_nodo_redactor(llm: BaseChatModel) -> NodoAsincrono:
             f"CONSULTA ORIGINAL: {estado['tarea']}\n\n{instruccion}\n\n"
             f"DATOS VALIDADOS:\n{datos_para_el_redactor(hallazgos, estado['analisis'])}"
         )
-        respuesta = await llm.ainvoke([SystemMessage(content=PROMPT_REDACTOR), HumanMessage(content=entrada)], config)
-        informe = texto_de(respuesta)
-        contribucion = Contribucion(agente=NOMBRE, paso=estado["pasos"], resumen=informe or "Sin respuesta.")
+        error: str | None = None
+        try:
+            respuesta = await llm.ainvoke(
+                [SystemMessage(content=PROMPT_REDACTOR), HumanMessage(content=entrada)], config
+            )
+            informe = texto_de(respuesta)
+        except Exception as falla:  # noqa: BLE001 - un fallo transitorio del modelo no tira abajo el grafo
+            if es_error_irrecuperable(falla):
+                raise
+            informe, error = "", descripcion_de_falla(falla)
+        contribucion = Contribucion(
+            agente=NOMBRE, paso=estado["pasos"], resumen=informe or error or "Sin respuesta.", error=error
+        )
         return {
             "informe": informe,
             "ultimo_agente": NOMBRE,

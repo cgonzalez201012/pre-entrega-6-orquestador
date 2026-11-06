@@ -23,6 +23,7 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
+from errores import es_error_irrecuperable
 from state import EstadoOrquestador
 
 NODO_MODELO = "modelo"
@@ -69,9 +70,11 @@ async def ejecutar_agente_react(
 ) -> CorridaEspecialista:
     """Corre un especialista con UN solo mensaje de entrada (contexto aislado).
 
-    Si el especialista se pasa del limite de pasos devuelve el error en lugar de levantar
+    Si el especialista se pasa del limite de pasos, o el modelo falla por una causa transitoria
+    (corte de red, limite de uso, error del servidor), devuelve el error en lugar de levantar
     la excepcion: el nodo la convierte en un aporte vacio que la validacion va a rechazar,
-    y el supervisor decide que hacer.
+    y el supervisor decide que hacer. Los errores irrecuperables (clave invalida, modelo
+    inexistente) si se levantan: reintentar no los arregla.
     """
     configuracion: RunnableConfig = {**(config or {}), "recursion_limit": recursion_limit}
     try:
@@ -81,7 +84,17 @@ async def ejecutar_agente_react(
             mensajes=[],
             error=f"El especialista no terminó dentro del límite de {recursion_limit} pasos.",
         )
+    except Exception as error:  # noqa: BLE001 - un nodo no puede dejar caer el grafo por un fallo transitorio
+        if es_error_irrecuperable(error):
+            raise
+        return CorridaEspecialista(mensajes=[], error=descripcion_de_falla(error))
     return CorridaEspecialista(mensajes=list(salida["messages"]))
+
+
+def descripcion_de_falla(error: Exception) -> str:
+    """Texto corto de un fallo del modelo, para dejarlo en el estado y en la traza."""
+    detalle = str(error).strip().splitlines()[0][:160] if str(error).strip() else ""
+    return f"El modelo falló ({type(error).__name__}){': ' + detalle if detalle else ''}."
 
 
 def entrada_con_correcciones(instruccion: str, estado: EstadoOrquestador, agente: str) -> str:

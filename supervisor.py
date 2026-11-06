@@ -17,6 +17,10 @@ que no reemplazan al modelo sino que acotan los errores graves:
     trabajo mas de `max_intentos` veces.
 
 Toda correccion de las guardas queda registrada en la decision (`corregida_por_guarda`).
+
+Si el modelo no devuelve una decision valida, o la API falla por una causa transitoria, el
+nodo no se cae: sigue el orden logico y deja el motivo en la decision. Los errores que
+reintentar no arregla (clave invalida, modelo inexistente) suben hasta `main.py`.
 """
 
 from typing import Any
@@ -27,7 +31,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field, ValidationError
 
+from agents.base import descripcion_de_falla
 from agents.research_agent import NodoAsincrono
+from errores import es_error_irrecuperable
 from state import (
     AGENTES,
     FINISH,
@@ -250,22 +256,26 @@ def crear_nodo_supervisor(llm: BaseChatModel, max_pasos: int, max_intentos: int)
 
     async def nodo_supervisor(estado: EstadoOrquestador, config: RunnableConfig) -> dict[str, Any]:
         contexto = resumen_del_trabajo(estado, max_pasos, max_intentos)
-        decision_invalida = False
+        # Si el modelo no decide (forma invalida o fallo transitorio de la API) el supervisor no
+        # se cae: sigue el orden logico y deja el motivo registrado en la decision.
+        falla: str | None = None
         try:
             respuesta = await decisor.ainvoke(
                 [SystemMessage(content=PROMPT_SUPERVISOR), HumanMessage(content=contexto)], config
             )
             decision = DecisionSupervisor.model_validate(respuesta)
         except (OutputParserException, ValidationError):
-            # El modelo no devolvio una decision con la forma pedida: se sigue el orden logico.
-            decision_invalida = True
-            decision = DecisionSupervisor(
-                siguiente=siguiente_logico(estado), motivo="El modelo no devolvió una decisión válida."
-            )
+            falla = "La decisión del modelo no tenía la forma pedida: se siguió el orden lógico."
+        except Exception as error:  # noqa: BLE001 - un fallo transitorio del modelo no tira abajo el grafo
+            if es_error_irrecuperable(error):
+                raise
+            falla = f"{descripcion_de_falla(error)} Se siguió el orden lógico."
+        if falla is not None:
+            decision = DecisionSupervisor(siguiente=siguiente_logico(estado), motivo=falla)
 
         destino, razon = aplicar_guardas(decision.siguiente, estado, max_pasos, max_intentos)
-        if decision_invalida:
-            razon = "La decisión del modelo no tenía la forma pedida: se siguió el orden lógico."
+        if falla is not None:
+            razon = falla
         instruccion = decision.instruccion.strip()
         if destino == FINISH:
             instruccion = ""

@@ -6,6 +6,8 @@ Es la pre-entrega 6 del curso de AI Engineering (Coderhouse). Trabajo en el áre
 
 ## Cómo probarlo (un solo comando)
 
+Python 3.12 o superior (lo corrí con 3.13).
+
 ```bash
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && pytest
 ```
@@ -21,6 +23,8 @@ python main.py --diagrama       # regenera docs/grafo.mmd (y docs/grafo.png si h
 mypy .                          # chequeo de tipos (opcional)
 ```
 
+Para volver a ejecutar el notebook de demostración: `pip install -r requirements-notebook.txt` y abrir `notebooks/demo_delegacion.ipynb` (necesita la clave). Ya está ejecutado y con sus salidas en el repositorio.
+
 ## Decisiones de interpretación
 
 Estas son las cosas que el enunciado no fija y que decidí yo. Prefiero que se vean desde el principio:
@@ -34,13 +38,14 @@ Estas son las cosas que el enunciado no fija y que decidí yo. Prefiero que se v
 | **`pasos`** | Cuenta las **delegaciones** a especialistas. La decisión de cerrar (`FINISH`) no consume un paso. `MAX_PASOS=10` significa "como máximo 10 delegaciones por tarea". |
 | **Temperatura** | No la envío: la API de Anthropic la rechaza con este modelo (error 400). Queda el valor del servicio. Por eso las pruebas de decisión se hacen con modelos falsos y no dependo de que el modelo real sea determinista. |
 | **Refinamientos** | Cuando el Supervisor vuelve a pedirle algo a un especialista, el resultado **se suma** a lo anterior (por ID) en lugar de reemplazarlo. Lo descubrí en la primera corrida real (ver "Evidencia"). |
+| **Fallas de la API** | Un corte de red, un límite de uso o un error del servidor **no tiran abajo el grafo**: el nodo convierte la falla en un aporte vacío con el error (`Contribucion.error`), la validación lo rechaza y el Supervisor decide si reintenta, dentro de sus topes. Si el que falla es el Supervisor, sigue el orden lógico y lo deja registrado en la decisión. Los errores que reintentar no arregla (clave inválida, modelo inexistente: HTTP 400/401/403/404) **sí suben**, para que `main.py` le diga al usuario qué cambiar. Los modelos reales se crean con timeout de 60 s y 2 reintentos (`ejecucion.crear_llm`). |
 | **Fuera de alcance** | Si la consulta no tiene que ver con incidentes ni reglas, el Investigador responde con el marcador explícito `FUERA_DE_ALCANCE`. Sin ese marcador, "no encontré nada" y "no corresponde" serían indistinguibles y la validación no podría aprobar legítimamente una respuesta sin datos. |
 
 ## Arquitectura
 
 ![Grafo del orquestador](docs/grafo.png)
 
-El diagrama sale de `grafo.get_graph().draw_mermaid()` (texto en `docs/grafo.mmd`; el PNG se renderizó desde ese mismo texto). Las líneas punteadas son las **aristas condicionales**:
+El diagrama sale de `grafo.get_graph()`: `draw_mermaid()` da el texto (`docs/grafo.mmd`) y `draw_mermaid_png()` el PNG; `python main.py --diagrama` hace las dos cosas. El `docs/grafo.png` del repositorio lo rendericé con `mmdc` (mermaid-cli) a partir de ese mismo texto, porque `draw_mermaid_png()` depende de un servicio web. Las líneas punteadas son las **aristas condicionales**:
 
 ```mermaid
 ---
@@ -124,9 +129,10 @@ Un "conflicto" acá es que un agente entregue algo que contradice los datos o lo
 | Riesgo | Cómo lo evito |
 |---|---|
 | **Supervisor infinito** | `MAX_PASOS` (delegaciones) y `MAX_INTENTOS_POR_AGENTE`, forzados por **código** (`supervisor.aplicar_guardas`), no por el prompt. Al llegar al tope el sistema cierra con un mensaje claro. El `recursion_limit` de LangGraph (`3·MAX_PASOS + 5`) queda como red de seguridad: nunca es lo que corta. |
-| **Contaminación de contexto** | Cada especialista arranca con **un único mensaje**; el Analista recibe solo el JSON que necesita (no la conversación del Investigador); el Redactor recibe la tarea y datos ya validados; el Supervisor recibe un **resumen textual**, nunca datos crudos. Tests lo verifican. |
+| **Contaminación de contexto** | Cada especialista arranca con **un único mensaje**; el Analista recibe solo el JSON que necesita (no la conversación del Investigador); el Redactor recibe la tarea y datos ya validados; el Supervisor recibe un **resumen textual**, nunca datos crudos. Tests lo verifican. El historial `messages` solo suma **un mensaje corto por aporte**, así que crece a lo sumo con `MAX_PASOS` y no hace falta recortarlo por tokens. |
 | **Supervisor que hace el trabajo de otros** | No tiene herramientas y su prompt lo define como "director de tráfico". Además su salida es un `Literal`: solo puede elegir a quién mandar. |
 | **El modelo se salta pasos o cierra antes de tiempo** | Las guardas corrigen la decisión (cerrar sin informe aprobado, redactar sin analizar) y la corrección **queda registrada** en `decisiones` (`corregida_por_guarda`, `razon_guarda`) y en la traza. Una salida inválida del modelo cae al orden lógico. |
+| **Excepciones sin capturar en un nodo** | Los tres especialistas y el Supervisor capturan las fallas transitorias del modelo (ver "Fallas de la API" en las decisiones); las herramientas devuelven los errores como JSON con una ayuda para que el agente corrija la llamada, no como excepciones; el `ToolNode` usa `handle_tool_errors=True`; y un especialista que se pasa de su tope de pasos devuelve un aporte rechazable en lugar de levantar `GraphRecursionError`. |
 
 ## Rúbrica de validación
 
@@ -140,8 +146,8 @@ El veredicto va al estado y el Supervisor lo lee en su resumen (aprobado o recha
 
 ## Qué pruebo y qué no
 
-- **Tests (`pytest`, sin red):** contratos, cálculos, herramientas (reales), agentes, validación, guardas del Supervisor, el **grafo completo** con modelos falsos (camino feliz, sin incidentes, fuera de alcance, refinamiento, intentos agotados, tope de pasos, salida inválida del supervisor, aislamiento de escritura y de contexto), traza, CLI, configuración y seguridad del repo (sin claves, `.gitignore`, dependencias fijadas, anotaciones de tipo). También hay un test de la **evidencia de dos o más llamadas a herramientas encadenadas** entre agentes.
-- **Prueba de mutación (`python scripts/mutacion.py`):** inyecto errores deliberados (un `>=` que pasa a `>`, una validación que se saltea, una arista mal cableada) en una copia del código y exijo que los tests fallen. Resultado actual: **40 mutantes, 40 detectados**. En la primera pasada sobrevivieron 3 (los tests no miraban esos comportamientos) y, al sumar la fusión de refinamientos, sobrevivió uno más; en cada caso agregué el test que faltaba.
+- **Tests (`pytest`, sin red):** contratos, cálculos, herramientas (reales), agentes, validación, guardas del Supervisor, el **grafo completo** con modelos falsos (camino feliz, sin incidentes, fuera de alcance, refinamiento, intentos agotados, tope de pasos, salida inválida o falla de la API del supervisor y de cada especialista, aislamiento de escritura y de contexto), traza, CLI, configuración y seguridad del repo (sin claves, `.gitignore`, dependencias fijadas, anotaciones de tipo). También hay un test de la **evidencia de dos o más llamadas a herramientas encadenadas** entre agentes.
+- **Prueba de mutación (`python scripts/mutacion.py`):** inyecto errores deliberados (un `>=` que pasa a `>`, una validación que se saltea, una arista mal cableada) en una copia del código y exijo que los tests fallen. Resultado actual: **46 mutantes, 46 detectados**. En la primera pasada sobrevivieron 3 (los tests no miraban esos comportamientos) y, al sumar la fusión de refinamientos, sobrevivió uno más; en cada caso agregué el test que faltaba. Los últimos seis mutantes sacan el resguardo contra fallas de la API de cada nodo.
 - **Lo que los tests NO prueban:** que *Claude* decida bien. Con modelos falsos verifico que el grafo enruta, delega, valida, refina y corta donde corresponde; que el modelo real elija bien se ve en la corrida real (siguiente sección).
 
 ## Evidencia de una corrida real
@@ -155,6 +161,33 @@ Corrí el orquestador con **Claude real** (`claude-haiku-4-5` para todos los age
 | 3. Consulta fuera de alcance (empleados y sueldos) | investigador → redactor → cierre (**se saltea al analista**) | Responde que no es de su dominio y no inventa datos | 5 | 7.617 / 686 |
 
 En los tres casos el Supervisor fijó el camino por su cuenta, cada aporte fue aprobado por la validación y ninguna guarda tuvo que corregir una decisión. Cada especialista usó solo sus herramientas: el Investigador consultó (`buscar_incidentes_calidad`, `detalle_incidente`, `consultar_regla_calidad`) y el Analista calculó (`calcular_brecha_regla`, `calcular_vencimiento_sla`, `priorizar_incidentes`). Esas cadenas de llamadas, en secuencia y entre dos agentes, son la evidencia de delegación.
+
+### Una corrida paso a paso (escenario 1)
+
+Extracto de [`trazas/traza-demo.log`](trazas/traza-demo.log), recortado (en el log completo están también la instrucción que recibió cada agente y su resumen). Los motivos son textuales: los escribió el Supervisor, no yo.
+
+```
+Tarea: "Necesito saber qué incidentes críticos abiertos tiene el maestro de artículos, qué regla incumple cada uno,
+        cuánto se pasaron del plazo (SLA) y cuál conviene atacar primero. Armame un informe corto."
+
+[Paso 1] Supervisor → investigador
+           Motivo: Primer paso: recolectar datos sobre incidentes críticos abiertos y sus reglas asociadas en el maestro de artículos.
+           Investigador usó: buscar_incidentes_calidad, detalle_incidente x2, consultar_regla_calidad x2
+           Validación: APROBADA
+[Paso 2] Supervisor → analista
+           Motivo: El investigador aprobó y encontró 2 incidentes críticos con ficha completa. Es momento de analizar brechas, vencimiento de SLA y prioridad.
+           Analista usó: calcular_brecha_regla x2, calcular_vencimiento_sla x2, priorizar_incidentes
+           Validación: APROBADA
+[Paso 3] Supervisor → redactor
+           Motivo: El investigador y el analista validaron sus aportes. [...] El análisis está completo y listo para redactar.
+           Redactor usó: ninguna
+           Validación: APROBADA
+[Cierre] Supervisor → FINISH (cierra la tarea)
+
+Estado final: completado | delegaciones: 3 | agentes: investigador, analista, redactor
+```
+
+Lo que se ve ahí: el Supervisor eligió el destino de cada paso mirando el resumen del trabajo (no una receta fija), el Analista calculó con las herramientas lo que el Investigador había recolectado, y cada aporte pasó por la validación antes de que el Supervisor decidiera. La respuesta final nombra a INC-1001 como prioritario (276 h hábiles de exceso, 312 registros) y a INC-1002 en segundo lugar (68 h).
 
 ### Lo que encontró la primera corrida real
 
@@ -183,11 +216,17 @@ agents/
 ejecucion.py          modelos reales, ejecución de una tarea, diagrama
 trazas.py             traza legible de la delegación (JSON y log)
 main.py               línea de comandos
+data/                 datos ficticios de Mercado Austral (incidentes y reglas), de solo lectura
 notebooks/demo_delegacion.ipynb   demostración ejecutada del flujo de delegación
 trazas/               traza de la corrida real (traza-demo.json y .log)
 docs/                 diagrama del grafo (grafo.mmd y grafo.png) y evidencia/ con la primera corrida real
 scripts/mutacion.py   prueba de mutación
-tests/                suite de pruebas
+tests/                suite de pruebas (modelos falsos en tests/fakes.py)
+requirements.txt      dependencias fijadas, incluidas las de las pruebas (un solo comando)
+requirements-notebook.txt   extras para volver a ejecutar el notebook
+Makefile              atajos: make todo | test | tipos | demo | diagrama
+.env.example          variables de entorno (sin claves)
+pyproject.toml        configuración de pytest y mypy
 ```
 
 ## Mapa a la rúbrica
