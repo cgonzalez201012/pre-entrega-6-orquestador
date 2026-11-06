@@ -1,0 +1,12 @@
+# Ejecucion del orquestador
+langgraph==1.2.19
+langchain-core==1.7.3
+langchain-anthropic==1.7.7
+anthropic==2.3.0
+pydantic==2.14.2
+python-dotenv==1.2.4
+
+# Pruebas y chequeo de tipos (con esto alcanza para correr `pytest`)
+pytest==9.2.0
+pytest-asyncio==1.4.1
+mypy==2.4.1

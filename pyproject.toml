@@ -1,0 +1,18 @@
+[project]
+name = "orquestador-multi-agente"
+version = "1.0.0"
+description = "Orquestador multi-agente jerarquico con LangGraph (pre-entrega 6)"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+exclude = ["tests/", "notebooks/"]

@@ -1,0 +1,107 @@
+=== 1. Priorización multi-agente (maestro de artículos) ===
+Tarea: "Necesito saber qué incidentes críticos abiertos tiene el maestro de artículos, qué regla incumple cada uno, cuánto se pasaron del plazo (SLA) y cuál conviene atacar primero. Armame un informe corto."
+
+[Paso 1] Supervisor → investigador
+           Motivo: Primer paso: recolectar datos sobre incidentes críticos abiertos y sus reglas asociadas en el maestro de artículos.
+           Instrucción: "Buscá todos los incidentes críticos abiertos del maestro de artículos e identificá qué regla de calidad de datos incumple cada uno."
+           Investigador usó: buscar_incidentes_calidad, detalle_incidente x2, consultar_regla_calidad x2
+           Resumen: ## Resumen Encontré **2 incidentes críticos abiertos** del maestro de artículos: | ID | Título | Regla incumplida | Descripción de la regla | |---|---|---|---| | **INC-1001** | Artículos activos sin código EAN | **R-ART-01**: EAN obligatorio | Todo artículo activo debe tener un código EAN de 13 dígitos (umbral: 99,5% → medición actual: 96,8%) | | **INC-1002** | Precio de lista en cero en artículos de venta | **R-ART-03**: Precio de lista mayor a cero | Todo artículo habilitado para la venta debe tener precio de lista mayor a cero (umbral: 100% → medición actual: 99,6%) | Ambos incidentes tienen SLA de 4 horas hábiles y están bajo responsabilidad del Gerente Comercial (Data Owner de Artículos), con Laura Pérez como Data Steward.
+           Validación: APROBADA
+[Paso 2] Supervisor → analista
+           Motivo: El investigador aprobó y encontró 2 incidentes críticos con ficha completa. Es momento de analizar brechas, vencimiento de SLA y prioridad.
+           Instrucción: "Calcula para cada incidente (INC-1001 e INC-1002): brecha porcentual contra umbral de cada regla y días de vencimiento del SLA. Genera ranking de prioridad."
+           Analista usó: calcular_brecha_regla x2, calcular_vencimiento_sla x2, priorizar_incidentes
+           Resumen: ## Resumen de Cálculos **Brechas de Reglas:** - **R-ART-01** (asociada a INC-1001): Medición 96.8%, umbral 99.5%, brecha de -2.7 puntos porcentuales. No cumple. - **R-ART-03** (asociada a INC-1002): Medición 99.6%, umbral 100.0%, brecha de -0.4 puntos porcentuales. No cumple. **Vencimiento de SLA:** - **INC-1001**: Severidad crítica. Abierto desde 2026-09-14, corte 2026-10-31. Transcurrieron 35 días hábiles (280 horas hábiles). SLA de 4 horas hábiles. Vencido con 276 horas hábiles de exceso. - **INC-1002**: Severidad crítica. Abierto desde 2026-10-20, corte 2026-10-31. Transcurrieron 9 días hábiles (72 horas hábiles). SLA de 4 horas hábiles. Vencido con 68 horas hábiles de exceso. **Ranking de Prioridad:** 1. **INC-1001** (más urgente) 2. **INC-1002**
+           Validación: APROBADA
+[Paso 3] Supervisor → redactor
+           Motivo: El investigador y el analista validaron sus aportes. Hay 2 incidentes críticos con brechas y SLA vencido. El análisis está completo y listo para redactar.
+           Instrucción: "Redactá un informe corto con: (1) los 2 incidentes críticos del maestro de artículos, (2) la regla incumplida de cada uno, (3) los días de vencimiento del SLA que calculó el analista, y (4) la recomendación de cuál atacar primero según la prioridad del analista. Mantené tono ejecutivo."
+           Redactor usó: ninguna
+           Resumen: # INFORME DE INCIDENTES CRÍTICOS — MAESTRO DE ARTÍCULOS El maestro de artículos tiene 2 incidentes críticos abiertos, ambos con SLA vencido. **INC-1001 es el prioritario** por estar 276 horas hábiles fuera de plazo (vs. 68 de INC-1002) y por afectar a 312 registros con una brecha regulatoria mayor (2,7 pp de incumplimiento en la regla R-ART-01). **Incidentes por prioridad:** - **INC-1001** — Artículos activos sin código EAN (R-ART-01: EAN obligatorio). Brecha: 2,7 pp. SLA vencido: 276 horas hábiles de exceso. 312 registros afectados. - **INC-1002** — Precio de lista en cero en artículos de venta (R-ART-03: Precio de lista mayor a cero). Brecha: 0,4 pp. SLA vencido: 68 horas hábiles de exceso. 41 registros afectados.
+           Validación: APROBADA
+[Cierre] Supervisor → FINISH (cierra la tarea)
+           Motivo: El informe del redactor fue APROBADO tras tres intervenciones completamente validadas (investigador → analista → redactor). La tarea está resuelta: se identificaron 2 incidentes críticos del maestro de artículos, se calcularon brechas y SLA vencido, y se priorizó INC-1001 como crítico inmediato. El usuario tiene el informe corto solicitado.
+
+Estado final: completado | delegaciones: 3 | agentes: investigador, analista, redactor
+Llamadas al modelo: 12 | tokens: 29698 entrada, 2726 salida | 30.97 s
+Respuesta final:
+# INFORME DE INCIDENTES CRÍTICOS — MAESTRO DE ARTÍCULOS
+
+El maestro de artículos tiene 2 incidentes críticos abiertos, ambos con SLA vencido. **INC-1001 es el prioritario** por estar 276 horas hábiles fuera de plazo (vs. 68 de INC-1002) y por afectar a 312 registros con una brecha regulatoria mayor (2,7 pp de incumplimiento en la regla R-ART-01).
+
+**Incidentes por prioridad:**
+
+- **INC-1001** — Artículos activos sin código EAN (R-ART-01: EAN obligatorio). Brecha: 2,7 pp. SLA vencido: 276 horas hábiles de exceso. 312 registros afectados.
+
+- **INC-1002** — Precio de lista en cero en artículos de venta (R-ART-03: Precio de lista mayor a cero). Brecha: 0,4 pp. SLA vencido: 68 horas hábiles de exceso. 41 registros afectados.
+
+=== 2. Otro maestro con más incidentes (proveedores) ===
+Tarea: "Priorizá todos los incidentes abiertos del maestro de proveedores: qué reglas incumplen, cómo está el vencimiento del SLA de cada uno y en qué orden hay que atenderlos. Quiero un informe corto."
+
+[Paso 1] Supervisor → investigador
+           Motivo: El investigador es siempre el primero. Necesitamos recolectar los incidentes y reglas del maestro de proveedores antes de priorizar.
+           Instrucción: "Consultá todos los incidentes abiertos del maestro de proveedores: relevá el estado, severidad y las reglas de calidad de datos que incumplen cada uno."
+           Investigador usó: buscar_incidentes_calidad, detalle_incidente x3, consultar_regla_calidad x3
+           Resumen: ## Resumen de Incidentes Abiertos - Maestro Proveedores Se consultaron **3 incidentes abiertos** del maestro de proveedores. Los detalles son: | ID | Título | Severidad | Estado | Regla Incumplida | Descripción de la Regla | |---|---|---|---|---|---| | **INC-2001** | CUIT invalido en proveedores activos | CRÍTICA | Abierto | **R-PRV-01**: CUIT válido | El CUIT debe tener 11 dígitos y verificador correcto (umbral 100%, medición 99.2%) | | **INC-2002** | Proveedores duplicados por razon social | ALTA | Abierto | **R-PRV-02**: Proveedor único por razón social | No puede haber dos proveedores activos con la misma razón social (umbral 99.5%, medición 97.9%) | | **INC-2003** | Condicion de pago sin informar | MEDIA | Abierto | **R-PRV-03**: Condición de pago informada | Todo proveedor activo debe tener condición de pago cargada (umbral 99%, medición 98.4%) | Todos los incidentes incumplen sus respectivos umbrales de aceptación.
+           Validación: APROBADA
+[Paso 2] Supervisor → analista
+           Motivo: El investigador identificó 3 incidentes abiertos del maestro de proveedores con fichas completas y aprobadas. Ahora el analista debe cuantificar brechas, SLAs y prioridades para ordenar la atención.
+           Instrucción: "Calcula la brecha de cada regla incumplida (R-PRV-01, R-PRV-02, R-PRV-03) contra su umbral, el vencimiento del SLA de cada incidente, y generá un ranking de prioridad ordenado por severidad y proximidad del vencimiento."
+           Analista usó: calcular_brecha_regla x3, calcular_vencimiento_sla x3, priorizar_incidentes
+           Resumen: ## Resumen de Resultados **Brechas de Reglas Incumplidas:** - **R-PRV-01**: Medición 99.2% vs Umbral 100.0% → Brecha: -0.8 pp (no cumple) - **R-PRV-02**: Medición 97.9% vs Umbral 99.5% → Brecha: -1.6 pp (no cumple) - **R-PRV-03**: Medición 98.4% vs Umbral 99.0% → Brecha: -0.6 pp (no cumple) **Vencimiento de SLAs:** - **INC-2001** (Crítica): 168 horas habiles transcurridas en 21 días habiles | SLA: 4 horas → Vencido con 164 horas de exceso - **INC-2002** (Alta): 80 horas habiles transcurridas en 10 días habiles | SLA: 24 horas → Vencido con 56 horas de exceso - **INC-2003** (Media): 40 horas habiles transcurridas en 5 días habiles | SLA: 72 horas → No vencido **Ranking de Prioridad:** 1. **INC-2001** (Crítica, vencido con 164 horas de exceso) 2. **INC-2002** (Alta, vencido con 56 horas de exceso) 3. **INC-2003** (Media, dentro de plazo)
+           Validación: APROBADA
+[Paso 3] Supervisor → redactor
+           Motivo: El investigador recolectó 3 incidentes completos (APROBADO) y el analista ya calculó brechas y vencimientos de SLA (APROBADO). El redactor tiene todo lo necesario para cerrar el informe.
+           Instrucción: "Redactá un informe corto que sintetice: (1) las 3 reglas incumplidas del maestro de proveedores con sus brechas, (2) el estado de vencimiento del SLA de cada incidente, y (3) el ranking de prioridad de atención de los 3 incidentes. Mantené brevedad y claridad."
+           Redactor usó: ninguna
+           Resumen: # INFORME DE PRIORIZACIÓN – MAESTRO DE PROVEEDORES Los 3 incidentes abiertos incumplen reglas críticas de calidad. **INC-2001 es el de máxima prioridad**: venció su SLA hace 164 horas (severidad crítica) y la regla R-PRV-01 tiene una brecha de 0.8 pp. Le sigue INC-2002, también vencido con 56 horas de exceso. Solo INC-2003 está dentro del plazo. --- **ORDEN DE ATENCIÓN:** 1. **INC-2001** – CUIT inválido en proveedores activos Regla: R-PRV-01 (CUIT válido). Brecha: 0.8 pp. SLA: vencido (164 horas de exceso). 2. **INC-2002** – Proveedores duplicados por razón social Regla: R-PRV-02 (Proveedor único por razón social). Brecha: 1.6 pp. SLA: vencido (56 horas de exceso). 3. **INC-2003** – Condición de pago sin informar Regla: R-PRV-03 (Condición de pago informada). Brecha: 0.6 pp. SLA: dentro del plazo.
+           Validación: APROBADA
+[Cierre] Supervisor → FINISH (cierra la tarea)
+           Motivo: El ciclo de trabajo está completo y aprobado en todos los niveles: investigador halló 3 incidentes abiertos (APROBADO), analista calculó brechas de reglas y vencimientos de SLA (APROBADO), y redactor entregó un informe priorizado por severidad y urgencia (APROBADO). La tarea solicitada está resuelta.
+
+Estado final: completado | delegaciones: 3 | agentes: investigador, analista, redactor
+Llamadas al modelo: 12 | tokens: 32456 entrada, 3318 salida | 33.57 s
+Respuesta final:
+# INFORME DE PRIORIZACIÓN – MAESTRO DE PROVEEDORES
+
+Los 3 incidentes abiertos incumplen reglas críticas de calidad. **INC-2001 es el de máxima prioridad**: venció su SLA hace 164 horas (severidad crítica) y la regla R-PRV-01 tiene una brecha de 0.8 pp. Le sigue INC-2002, también vencido con 56 horas de exceso. Solo INC-2003 está dentro del plazo.
+
+---
+
+**ORDEN DE ATENCIÓN:**
+
+1. **INC-2001** – CUIT inválido en proveedores activos  
+   Regla: R-PRV-01 (CUIT válido). Brecha: 0.8 pp. SLA: vencido (164 horas de exceso).
+
+2. **INC-2002** – Proveedores duplicados por razón social  
+   Regla: R-PRV-02 (Proveedor único por razón social). Brecha: 1.6 pp. SLA: vencido (56 horas de exceso).
+
+3. **INC-2003** – Condición de pago sin informar  
+   Regla: R-PRV-03 (Condición de pago informada). Brecha: 0.6 pp. SLA: dentro del plazo.
+
+=== 3. Consulta fuera de alcance ===
+Tarea: "¿Cuántos empleados tiene Mercado Austral y cuánto cobra el gerente de datos?"
+
+[Paso 1] Supervisor → investigador
+           Motivo: Según protocolo, el investigador interviene primero. La tarea solicita datos de recursos humanos que están fuera del alcance de incidentes y reglas de calidad de datos, por lo que el investigador debe declarar esto.
+           Instrucción: "Consulta información sobre cantidad de empleados en Mercado Austral y salario del gerente de datos."
+           Investigador usó: ninguna
+           Resumen: FUERA_DE_ALCANCE: Mi trabajo es recolectar datos sobre incidentes de calidad de datos y reglas de calidad en los maestros (artículos, proveedores y sucursales). La información sobre cantidad de empleados y salarios no está en mis herramientas.
+           Validación: APROBADA
+[Paso 2] Supervisor → redactor
+           Motivo: El investigador determinó correctamente que esta consulta no trata sobre incidentes de calidad de datos ni reglas de maestros, sino sobre información de RRHH. El redactor debe comunicar esto de forma clara al usuario sin pasar por análisis.
+           Instrucción: "Redacta un informe conciso indicando que la consulta está fuera del alcance del equipo de Gobierno de Datos. Especifica que no contamos con herramientas para reportar cantidad de empleados ni información salarial."
+           Redactor usó: ninguna
+           Resumen: # Informe: Consulta sobre estructura organizativa de Mercado Austral S.A. La consulta no puede ser procesada por el equipo de Gobierno de Datos. Nuestro alcance se limita al análisis de incidentes de calidad en datos maestros (artículos, proveedores y sucursales) y al seguimiento de reglas de validación asociadas. No disponemos de herramientas ni datos para reportar cantidad de empleados ni información sobre estructura salarial de la organización. Se sugiere dirigir esta consulta a Recursos Humanos o a la Gerencia Administrativa.
+           Validación: APROBADA
+[Cierre] Supervisor → FINISH (cierra la tarea)
+           Motivo: La consulta está fuera del alcance del equipo de Gobierno de Datos. El investigador correctamente identificó que no tiene herramientas para acceder a información sobre cantidad de empleados o salarios. El redactor ya documentó esta limitación en un informe aprobado. La tarea termina aquí.
+
+Estado final: completado | delegaciones: 2 | agentes: investigador, redactor
+Llamadas al modelo: 5 | tokens: 7617 entrada, 686 salida | 9.81 s
+Respuesta final:
+# Informe: Consulta sobre estructura organizativa de Mercado Austral S.A.
+
+La consulta no puede ser procesada por el equipo de Gobierno de Datos. Nuestro alcance se limita al análisis de incidentes de calidad en datos maestros (artículos, proveedores y sucursales) y al seguimiento de reglas de validación asociadas. No disponemos de herramientas ni datos para reportar cantidad de empleados ni información sobre estructura salarial de la organización.
+
+Se sugiere dirigir esta consulta a Recursos Humanos o a la Gerencia Administrativa.

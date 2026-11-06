@@ -1,0 +1,101 @@
+{
+  "aviso": "Reglas FICTICIAS de la empresa ficticia Mercado Austral S.A., armadas para la pre-entrega 6 del curso.",
+  "reglas": [
+    {
+      "id": "R-ART-01",
+      "maestro": "articulos",
+      "nombre": "EAN obligatorio",
+      "descripcion": "Todo articulo activo debe tener un codigo EAN de 13 digitos.",
+      "umbral_aceptacion_pct": 99.5,
+      "medicion_actual_pct": 96.8
+    },
+    {
+      "id": "R-ART-02",
+      "maestro": "articulos",
+      "nombre": "Descripcion unica",
+      "descripcion": "No puede haber dos articulos activos con la misma descripcion.",
+      "umbral_aceptacion_pct": 99.0,
+      "medicion_actual_pct": 98.1
+    },
+    {
+      "id": "R-ART-03",
+      "maestro": "articulos",
+      "nombre": "Precio de lista mayor a cero",
+      "descripcion": "Todo articulo habilitado para la venta debe tener precio de lista mayor a cero.",
+      "umbral_aceptacion_pct": 100.0,
+      "medicion_actual_pct": 99.6
+    },
+    {
+      "id": "R-ART-04",
+      "maestro": "articulos",
+      "nombre": "Unidad de medida consistente",
+      "descripcion": "La unidad de medida del articulo debe coincidir con la de su presentacion.",
+      "umbral_aceptacion_pct": 99.0,
+      "medicion_actual_pct": 99.3
+    },
+    {
+      "id": "R-ART-05",
+      "maestro": "articulos",
+      "nombre": "Categoria comercial informada",
+      "descripcion": "Todo articulo activo debe tener una categoria comercial asignada.",
+      "umbral_aceptacion_pct": 99.9,
+      "medicion_actual_pct": 100.0
+    },
+    {
+      "id": "R-PRV-01",
+      "maestro": "proveedores",
+      "nombre": "CUIT valido",
+      "descripcion": "El CUIT del proveedor activo debe tener 11 digitos y digito verificador correcto.",
+      "umbral_aceptacion_pct": 100.0,
+      "medicion_actual_pct": 99.2
+    },
+    {
+      "id": "R-PRV-02",
+      "maestro": "proveedores",
+      "nombre": "Proveedor unico por razon social",
+      "descripcion": "No puede haber dos proveedores activos con la misma razon social.",
+      "umbral_aceptacion_pct": 99.5,
+      "medicion_actual_pct": 97.9
+    },
+    {
+      "id": "R-PRV-03",
+      "maestro": "proveedores",
+      "nombre": "Condicion de pago informada",
+      "descripcion": "Todo proveedor activo debe tener condicion de pago cargada.",
+      "umbral_aceptacion_pct": 99.0,
+      "medicion_actual_pct": 98.4
+    },
+    {
+      "id": "R-PRV-04",
+      "maestro": "proveedores",
+      "nombre": "Telefono con formato valido",
+      "descripcion": "El telefono de contacto debe respetar el formato nacional definido.",
+      "umbral_aceptacion_pct": 98.0,
+      "medicion_actual_pct": 98.7
+    },
+    {
+      "id": "R-SUC-01",
+      "maestro": "sucursales",
+      "nombre": "Geolocalizacion informada",
+      "descripcion": "Toda sucursal activa debe tener latitud y longitud cargadas.",
+      "umbral_aceptacion_pct": 100.0,
+      "medicion_actual_pct": 94.7
+    },
+    {
+      "id": "R-SUC-02",
+      "maestro": "sucursales",
+      "nombre": "Formato comercial vigente",
+      "descripcion": "El formato comercial de la sucursal debe pertenecer al catalogo vigente.",
+      "umbral_aceptacion_pct": 100.0,
+      "medicion_actual_pct": 97.0
+    },
+    {
+      "id": "R-SUC-03",
+      "maestro": "sucursales",
+      "nombre": "Horario de atencion informado",
+      "descripcion": "Toda sucursal activa debe tener horario de atencion cargado.",
+      "umbral_aceptacion_pct": 99.0,
+      "medicion_actual_pct": 91.2
+    }
+  ]
+}

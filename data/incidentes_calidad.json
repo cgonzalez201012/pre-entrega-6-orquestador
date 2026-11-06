@@ -1,0 +1,156 @@
+{
+  "aviso": "Datos FICTICIOS de la empresa ficticia Mercado Austral S.A., armados para la pre-entrega 6 del curso. Simulan una base de incidentes de calidad de datos.",
+  "fecha_corte": "2026-10-31",
+  "sla_horas_habiles": {
+    "critica": 4,
+    "alta": 24,
+    "media": 72,
+    "baja": 120
+  },
+  "incidentes": [
+    {
+      "id": "INC-1001",
+      "maestro": "articulos",
+      "titulo": "Articulos activos sin codigo EAN",
+      "severidad": "critica",
+      "estado": "abierto",
+      "fecha_alta": "2026-09-14",
+      "regla_id": "R-ART-01",
+      "registros_afectados": 312,
+      "responsable": "Gerente Comercial (Data Owner de Articulos)",
+      "data_steward": "Laura Perez"
+    },
+    {
+      "id": "INC-1002",
+      "maestro": "articulos",
+      "titulo": "Precio de lista en cero en articulos de venta",
+      "severidad": "critica",
+      "estado": "abierto",
+      "fecha_alta": "2026-10-20",
+      "regla_id": "R-ART-03",
+      "registros_afectados": 41,
+      "responsable": "Gerente Comercial (Data Owner de Articulos)",
+      "data_steward": "Laura Perez"
+    },
+    {
+      "id": "INC-1003",
+      "maestro": "articulos",
+      "titulo": "Descripciones duplicadas entre articulos distintos",
+      "severidad": "alta",
+      "estado": "abierto",
+      "fecha_alta": "2026-10-05",
+      "regla_id": "R-ART-02",
+      "registros_afectados": 128,
+      "responsable": "Gerente Comercial (Data Owner de Articulos)",
+      "data_steward": "Laura Perez"
+    },
+    {
+      "id": "INC-1004",
+      "maestro": "articulos",
+      "titulo": "Unidad de medida inconsistente entre articulo y presentacion",
+      "severidad": "media",
+      "estado": "en_curso",
+      "fecha_alta": "2026-10-12",
+      "regla_id": "R-ART-04",
+      "registros_afectados": 77,
+      "responsable": "Gerente Comercial (Data Owner de Articulos)",
+      "data_steward": "Laura Perez"
+    },
+    {
+      "id": "INC-1005",
+      "maestro": "articulos",
+      "titulo": "Categoria comercial vacia",
+      "severidad": "baja",
+      "estado": "cerrado",
+      "fecha_alta": "2026-08-30",
+      "regla_id": "R-ART-05",
+      "registros_afectados": 19,
+      "responsable": "Gerente Comercial (Data Owner de Articulos)",
+      "data_steward": "Laura Perez"
+    },
+    {
+      "id": "INC-2001",
+      "maestro": "proveedores",
+      "titulo": "CUIT invalido en proveedores activos",
+      "severidad": "critica",
+      "estado": "abierto",
+      "fecha_alta": "2026-10-02",
+      "regla_id": "R-PRV-01",
+      "registros_afectados": 9,
+      "responsable": "Gerente de Compras (Data Owner de Proveedores)",
+      "data_steward": "Martin Gimenez"
+    },
+    {
+      "id": "INC-2002",
+      "maestro": "proveedores",
+      "titulo": "Proveedores duplicados por razon social",
+      "severidad": "alta",
+      "estado": "abierto",
+      "fecha_alta": "2026-10-18",
+      "regla_id": "R-PRV-02",
+      "registros_afectados": 23,
+      "responsable": "Gerente de Compras (Data Owner de Proveedores)",
+      "data_steward": "Martin Gimenez"
+    },
+    {
+      "id": "INC-2003",
+      "maestro": "proveedores",
+      "titulo": "Condicion de pago sin informar",
+      "severidad": "media",
+      "estado": "abierto",
+      "fecha_alta": "2026-10-25",
+      "regla_id": "R-PRV-03",
+      "registros_afectados": 14,
+      "responsable": "Gerente de Compras (Data Owner de Proveedores)",
+      "data_steward": "Martin Gimenez"
+    },
+    {
+      "id": "INC-2004",
+      "maestro": "proveedores",
+      "titulo": "Telefono de contacto con formato invalido",
+      "severidad": "baja",
+      "estado": "cerrado",
+      "fecha_alta": "2026-09-01",
+      "regla_id": "R-PRV-04",
+      "registros_afectados": 52,
+      "responsable": "Gerente de Compras (Data Owner de Proveedores)",
+      "data_steward": "Martin Gimenez"
+    },
+    {
+      "id": "INC-3001",
+      "maestro": "sucursales",
+      "titulo": "Sucursales sin geolocalizacion",
+      "severidad": "alta",
+      "estado": "abierto",
+      "fecha_alta": "2026-10-08",
+      "regla_id": "R-SUC-01",
+      "registros_afectados": 6,
+      "responsable": "Gerente de Operaciones (Data Owner de Sucursales)",
+      "data_steward": "Sofia Rios"
+    },
+    {
+      "id": "INC-3002",
+      "maestro": "sucursales",
+      "titulo": "Formato comercial desactualizado",
+      "severidad": "media",
+      "estado": "en_curso",
+      "fecha_alta": "2026-10-15",
+      "regla_id": "R-SUC-02",
+      "registros_afectados": 4,
+      "responsable": "Gerente de Operaciones (Data Owner de Sucursales)",
+      "data_steward": "Sofia Rios"
+    },
+    {
+      "id": "INC-3003",
+      "maestro": "sucursales",
+      "titulo": "Horario de atencion sin cargar",
+      "severidad": "baja",
+      "estado": "abierto",
+      "fecha_alta": "2026-10-28",
+      "regla_id": "R-SUC-03",
+      "registros_afectados": 11,
+      "responsable": "Gerente de Operaciones (Data Owner de Sucursales)",
+      "data_steward": "Sofia Rios"
+    }
+  ]
+}
